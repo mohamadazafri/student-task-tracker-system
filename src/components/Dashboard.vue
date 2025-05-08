@@ -225,14 +225,19 @@ export default {
     // Get upcoming deadlines for next 7 days
     upcomingDeadlines() {
       const today = new Date();
+      today.setHours(0, 0, 0, 0);
       return this.tasks
         .filter((task) => {
           const dueDate = new Date(task.dueDate);
+          dueDate.setHours(0, 0, 0, 0);
           const diffDays = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+          // Show tasks that:
+          // 1. Are not completed AND
+          // 2. Due within next 7 days (0-7 days) including today AND
+          // 3. Not overdue (diffDays >= 0)
           return task.status !== "Completed" && diffDays >= 0 && diffDays <= 7;
         })
-        .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
-        .slice(0, 3); // Show only top 3 upcoming tasks
+        .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate)); // Sort by due date
     },
     // Data for status distribution pie chart
     statusChartData() {
@@ -367,6 +372,7 @@ export default {
       dueDate.setHours(0, 0, 0, 0);
       const diffDays = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
 
+      if (diffDays === 0) return "due-today";
       if (diffDays === 1) return "urgent";
       return "normal";
     },
@@ -562,6 +568,12 @@ export default {
   border-radius: 4px;
   color: #6c757d;
   background-color: #e9ecef;
+}
+
+.remaining-days.due-today {
+  color: #dc3545;
+  background-color: #ffebee;
+  font-weight: 500;
 }
 
 .remaining-days.urgent {
