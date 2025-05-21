@@ -75,7 +75,7 @@ export default {
       this.currentView = "edit-task";
     },
     handleTaskSaved() {
-      this.currentView = "tasks";
+      this.currentView = "dashboard";
       this.selectedTask = null;
     },
     handleAddTask() {

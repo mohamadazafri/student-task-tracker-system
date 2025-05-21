@@ -283,7 +283,7 @@ export default {
 
       localStorage.setItem("tasks", JSON.stringify(tasks));
       window.dispatchEvent(new CustomEvent("taskUpdated"));
-      this.$emit("update:show", false);
+      this.$emit("task-saved");
       this.resetForm();
     },
     handleCancel() {
