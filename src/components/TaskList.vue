@@ -132,6 +132,8 @@
 </template>
 
 <script>
+import { taskService } from "../services/api";
+
 export default {
   name: "TaskList",
   data() {
@@ -184,6 +186,8 @@ export default {
       sortBy: "dueDate",
       sortDesc: true,
       selectedFilter: "all",
+      loading: false,
+      error: null,
     };
   },
   computed: {
@@ -229,6 +233,36 @@ export default {
     },
   },
   methods: {
+    async loadTasks() {
+      this.loading = true;
+      this.error = null;
+      try {
+        const response = await taskService.getAllTasks();
+        this.tasks = response.data;
+      } catch (error) {
+        this.error = "Failed to load tasks. Please try again later.";
+        console.error("Error loading tasks:", error);
+      } finally {
+        this.loading = false;
+      }
+    },
+    async deleteTask(id) {
+      if (confirm("Are you sure you want to delete this task?")) {
+        try {
+          await taskService.deleteTask(id);
+          await this.loadTasks();
+        } catch (error) {
+          this.error = "Failed to delete task. Please try again later.";
+          console.error("Error deleting task:", error);
+        }
+      }
+    },
+    editTask(task) {
+      this.$emit("edit-task", task);
+    },
+    setFilter(filter) {
+      this.selectedFilter = filter;
+    },
     getStatusVariant(status) {
       const variants = {
         Pending: "warning",
@@ -250,11 +284,9 @@ export default {
       const dueDate = new Date(date);
       const today = new Date();
 
-      // Set both dates to midnight for accurate day calculation
       dueDate.setHours(0, 0, 0, 0);
       today.setHours(0, 0, 0, 0);
 
-      // Calculate the difference in milliseconds and convert to days
       const diffTime = dueDate.getTime() - today.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
@@ -270,34 +302,12 @@ export default {
         day: "numeric",
       });
     },
-    editTask(task) {
-      this.$emit("edit-task", task);
-    },
-    deleteTask(id) {
-      if (confirm("Are you sure you want to delete this task?")) {
-        const tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
-        const updatedTasks = tasks.filter((task) => task.id !== id);
-        localStorage.setItem("tasks", JSON.stringify(updatedTasks));
-        window.dispatchEvent(new CustomEvent("taskUpdated"));
-        this.loadTasks();
-      }
-    },
-    loadTasks() {
-      this.tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
-    },
     isCompleted(task) {
       return task.status === "Completed";
-    },
-    setFilter(filter) {
-      this.selectedFilter = filter;
     },
   },
   mounted() {
     this.loadTasks();
-    window.addEventListener("storage", this.loadTasks);
-  },
-  beforeUnmount() {
-    window.removeEventListener("storage", this.loadTasks);
   },
 };
 </script>

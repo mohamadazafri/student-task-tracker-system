@@ -53,14 +53,20 @@
         </b-form-group>
 
         <div class="form-actions">
-          <b-button type="submit" variant="primary" class="submit-btn">
+          <b-button
+            type="submit"
+            variant="primary"
+            class="submit-btn"
+            :disabled="loading"
+          >
             <i class="fas" :class="isEditing ? 'fa-save' : 'fa-plus'"></i>
             {{ isEditing ? "Update Task" : "Add Task" }}
           </b-button>
           <b-button
             variant="outline-secondary"
-            @click="$emit('cancel')"
+            @click="handleCancel"
             class="cancel-btn"
+            :disabled="loading"
           >
             <i class="fas fa-times"></i> Cancel
           </b-button>
@@ -194,6 +200,8 @@
 </style>
 
 <script>
+import { taskService } from "../services/api";
+
 export default {
   name: "TaskForm",
   props: {
@@ -216,16 +224,8 @@ export default {
         status: "Pending",
       },
       statusOptions: ["Pending", "In Progress", "Completed"],
-      titleRules: [
-        (v) => !!v || "Title is required",
-        (v) => v.length <= 50 || "Title must be less than 50 characters",
-      ],
-      descriptionRules: [
-        (v) => !!v || "Description is required",
-        (v) =>
-          v.length <= 200 || "Description must be less than 200 characters",
-      ],
-      dueDateRules: [(v) => !!v || "Due date is required"],
+      loading: false,
+      error: null,
     };
   },
   computed: {
@@ -264,30 +264,30 @@ export default {
         dueDate: "",
         status: "Pending",
       };
+      this.error = null;
     },
-    handleSubmit() {
-      const tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
-
-      if (this.form.id) {
-        const taskIndex = tasks.findIndex((t) => t.id === this.form.id);
-        if (taskIndex !== -1) {
-          tasks[taskIndex] = { ...this.form };
+    async handleSubmit() {
+      this.loading = true;
+      this.error = null;
+      try {
+        if (this.isEditing) {
+          await taskService.updateTask(this.form.id, this.form);
+        } else {
+          await taskService.createTask(this.form);
         }
-      } else {
-        const newTask = {
-          ...this.form,
-          id: `T${tasks.length + 1}`,
-        };
-        tasks.push(newTask);
+        this.$emit("task-saved");
+        this.resetForm();
+      } catch (error) {
+        this.error = this.isEditing
+          ? "Failed to update task. Please try again later."
+          : "Failed to create task. Please try again later.";
+        console.error("Error saving task:", error);
+      } finally {
+        this.loading = false;
       }
-
-      localStorage.setItem("tasks", JSON.stringify(tasks));
-      window.dispatchEvent(new CustomEvent("taskUpdated"));
-      this.$emit("task-saved");
-      this.resetForm();
     },
     handleCancel() {
-      this.$emit("update:show", false);
+      this.$emit("cancel");
       this.resetForm();
     },
     getMinDate() {

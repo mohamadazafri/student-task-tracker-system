@@ -146,6 +146,7 @@ import {
   LinearScale,
   BarElement,
 } from "chart.js";
+import { taskService } from "../services/api";
 
 // Register Chart.js components
 ChartJS.register(
@@ -167,7 +168,9 @@ export default {
   inject: ["router"],
   data() {
     return {
-      tasks: [], // Store all tasks
+      tasks: [],
+      loading: false,
+      error: null,
       // Configuration for pie chart
       pieChartOptions: {
         responsive: true,
@@ -300,28 +303,18 @@ export default {
     },
   },
   methods: {
-    // Load tasks from localStorage
-    loadTasks() {
-      const tasksData = localStorage.getItem("tasks");
-      if (tasksData) {
-        try {
-          this.tasks = JSON.parse(tasksData);
-        } catch (e) {
-          console.error("Error parsing tasks:", e);
-          this.tasks = [];
-        }
-      } else {
-        this.tasks = [];
+    async loadTasks() {
+      this.loading = true;
+      this.error = null;
+      try {
+        const response = await taskService.getAllTasks();
+        this.tasks = response.data;
+      } catch (error) {
+        this.error = "Failed to load tasks. Please try again later.";
+        console.error("Error loading tasks:", error);
+      } finally {
+        this.loading = false;
       }
-    },
-    // Set up event listeners for task updates
-    setupEventListeners() {
-      window.addEventListener("taskUpdated", this.loadTasks);
-      window.addEventListener("storage", (e) => {
-        if (e.key === "tasks") {
-          this.loadTasks();
-        }
-      });
     },
     // Format date for display
     formatDate(date) {
@@ -377,23 +370,10 @@ export default {
       return "normal";
     },
   },
-  // Lifecycle hooks
-  created() {
-    // Load tasks when component is created
-    this.loadTasks();
-  },
   mounted() {
-    // Set up event listeners and start periodic refresh
-    this.setupEventListeners();
     this.loadTasks();
-    this.refreshInterval = setInterval(() => {
-      this.loadTasks();
-    }, 2000);
   },
   beforeUnmount() {
-    // Clean up event listeners and intervals
-    window.removeEventListener("taskUpdated", this.loadTasks);
-    window.removeEventListener("storage", this.loadTasks);
     if (this.refreshInterval) {
       clearInterval(this.refreshInterval);
     }
