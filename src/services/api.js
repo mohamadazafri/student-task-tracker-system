@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const API_URL = "http://localhost/student-task-tracker-system/api";
+// const API_URL = "http://localhost/student-task-tracker-system/api";
+const API_URL = "https://www.student-task-tracker-system.kesug.com/";
 
 const api = axios.create({
   baseURL: API_URL,
