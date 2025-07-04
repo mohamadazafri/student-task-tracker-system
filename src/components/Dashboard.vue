@@ -168,7 +168,7 @@ export default {
   inject: ["router"],
   data() {
     return {
-      tasks: [],
+      tasks: [], // Initialize as empty array
       loading: false,
       error: null,
       // Configuration for pie chart
@@ -205,19 +205,25 @@ export default {
   computed: {
     // Calculate total number of tasks
     totalTasks() {
-      return this.tasks.length;
+      return Array.isArray(this.tasks) ? this.tasks.length : 0;
     },
     // Count completed tasks
     completedTasks() {
-      return this.tasks.filter((task) => task.status === "Completed").length;
+      return Array.isArray(this.tasks)
+        ? this.tasks.filter((task) => task.status === "Completed").length
+        : 0;
     },
     // Count pending tasks
     pendingTasks() {
-      return this.tasks.filter((task) => task.status === "Pending").length;
+      return Array.isArray(this.tasks)
+        ? this.tasks.filter((task) => task.status === "Pending").length
+        : 0;
     },
     // Count in-progress tasks
     inProgressTasks() {
-      return this.tasks.filter((task) => task.status === "In Progress").length;
+      return Array.isArray(this.tasks)
+        ? this.tasks.filter((task) => task.status === "In Progress").length
+        : 0;
     },
     // Calculate completion rate percentage
     completionRate() {
@@ -227,6 +233,8 @@ export default {
     },
     // Get upcoming deadlines for next 7 days
     upcomingDeadlines() {
+      if (!Array.isArray(this.tasks)) return [];
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       return this.tasks
@@ -244,6 +252,18 @@ export default {
     },
     // Data for status distribution pie chart
     statusChartData() {
+      if (!Array.isArray(this.tasks)) {
+        return {
+          labels: ["Pending", "In Progress", "Completed"],
+          datasets: [
+            {
+              backgroundColor: ["#ffc107", "#17a2b8", "#28a745"],
+              data: [0, 0, 0],
+            },
+          ],
+        };
+      }
+
       return {
         labels: ["Pending", "In Progress", "Completed"],
         datasets: [
@@ -260,6 +280,29 @@ export default {
     },
     // Data for weekly task distribution bar chart
     dueDateChartData() {
+      if (!Array.isArray(this.tasks)) {
+        return {
+          labels: [
+            "Today",
+            "Tomorrow",
+            "Day 3",
+            "Day 4",
+            "Day 5",
+            "Day 6",
+            "Day 7",
+          ],
+          datasets: [
+            {
+              label: "Tasks Due",
+              data: [0, 0, 0, 0, 0, 0, 0],
+              backgroundColor: "#007bff",
+              borderColor: "#0056b3",
+              borderWidth: 1,
+            },
+          ],
+        };
+      }
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
@@ -308,10 +351,14 @@ export default {
       this.error = null;
       try {
         const response = await taskService.getAllTasks();
-        this.tasks = response.data;
+        // Ensure tasks is always an array
+        this.tasks = Array.isArray(response.data) ? response.data : [];
+        console.log("Loaded tasks:", this.tasks);
       } catch (error) {
         this.error = "Failed to load tasks. Please try again later.";
         console.error("Error loading tasks:", error);
+        // Set tasks to empty array on error
+        this.tasks = [];
       } finally {
         this.loading = false;
       }
